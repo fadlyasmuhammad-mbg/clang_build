@@ -1,0 +1,94 @@
+name: LLVM Toolchain Build
+
+on:
+  workflow_dispatch:
+    branches:
+      - main
+
+env:
+  TZ: Asia/Jakarta
+  llvm_url: https://github.com/llvm/llvm-project
+
+jobs:
+  cloning:
+    name: Cloning Project (llvm source)
+    runs-on: ubuntu-latest
+    container:
+      image: mhmmdfdlyas/dockerfile:t-ubuntu
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Clone LLVM source
+        run: |
+          git clone --single-branch "${llvm_url}" -b main src/llvm-project --depth=1
+          sed -i 's/set(LLVM_VERSION_SUFFIX.*/set(LLVM_VERSION_SUFFIX "")/' \
+            src/llvm-project/cmake/Modules/LLVMVersion.cmake
+
+      - name: Cache llvm source
+        uses: actions/cache/save@v4
+        with:
+          path: src/llvm-project
+          key: llvm-src-${{ github.run_id }}
+
+  profile:
+    name: Build LLVM (profile)
+    needs: cloning
+    runs-on: ubuntu-latest
+    container:
+      image: mhmmdfdlyas/dockerfile:t-ubuntu
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Restore llvm source cache
+        uses: actions/cache/restore@v4
+        with:
+          path: src/llvm-project
+          key: llvm-src-${{ github.run_id }}
+
+      - name: Build profile
+        env:
+          GITHUB_TOKEN: ${{ secrets.TOKEN }}
+          ghuser_name: ${{ secrets.GHUSER_NAME }}
+          ghuser_email: ${{ secrets.GHUSER_EMAIL }}
+        run: ./tc_scripts/init.sh profile
+
+      - name: Cleanup build artifacts (keep profdata.prof only)
+        run: find build/llvm/instrumented -type f ! -name 'profdata.prof' -delete
+
+      - name: Cache profdata + llvm source
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            build/llvm/instrumented
+            src/llvm-project
+          key: profdata-${{ github.run_id }}
+
+  final:
+    name: Build LLVM (final)
+    needs: profile
+    runs-on: ubuntu-latest
+    container:
+      image: mhmmdfdlyas/dockerfile:t-ubuntu
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Restore profdata + llvm source cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            build/llvm/instrumented
+            src/llvm-project
+          key: profdata-${{ github.run_id }}
+
+      - name: Build final
+        env:
+          GITHUB_TOKEN: ${{ secrets.TOKEN }}
+          ghuser_name: ${{ secrets.GHUSER_NAME }}
+          ghuser_email: ${{ secrets.GHUSER_EMAIL }}
+        run: ./tc_scripts/init.sh final
