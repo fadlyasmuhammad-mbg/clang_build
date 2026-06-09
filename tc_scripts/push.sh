@@ -56,23 +56,34 @@ git add .
 git commit -s -m "$(cat /tmp/commit_msg)"
 git push "https://${ghuser_name}:${GITHUB_TOKEN}@github.com/greenforce-project/greenforce_clang" main -f
 
-if gh release view "${release_tag}"; then
+echo "${GITHUB_TOKEN}" | gh auth login --with-token
+if gh release view "${release_tag}" --repo greenforce-project/greenforce_clang; then
     for release_file in "${install_path}/${release_file}"; do
         if [[ -e "${release_file}" ]]; then
-            gh release upload --clobber "${release_tag}" "${release_file}" &&
-                {
-                    echo "Version ${release_tag} updated!"
-                }
+            gh release upload \
+                --repo greenforce-project/greenforce_clang \
+                --clobber \
+                "${release_tag}" \
+                "${release_file}" &&
+            {
+                echo "Version ${release_tag} updated!"
+            }
         fi
     done
 else
-    gh release create "${release_tag}" -t "${release_date}";
+    gh release create \
+        --repo greenforce-project/greenforce_clang \
+        "${release_tag}" \
+        -t "${release_date}"
     for release_file in "${install_path}/${release_file}"; do
         if [[ -e "${release_file}" ]]; then
-            gh release upload "${release_tag}" "${release_file}" &&
-                {
-                    echo "Version ${release_tag} released!"
-                }
+            gh release upload \
+                --repo greenforce-project/greenforce_clang \
+                "${release_tag}" \
+                "${release_file}" &&
+            {
+                echo "Version ${release_tag} released!"
+            }
         fi
     done
 fi
