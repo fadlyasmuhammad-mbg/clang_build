@@ -8,7 +8,6 @@ on:
 env:
   TZ: Asia/Jakarta
   llvm_url: https://github.com/llvm/llvm-project
-  gs_url: https://android.googlesource.com/toolchain/llvm-project
 
 jobs:
   cloning:
@@ -23,14 +22,9 @@ jobs:
 
       - name: Clone LLVM source
         run: |
-          llvm_dir="$(pwd)/src/llvm-project"
-          git clone -j64 --single-branch "${gs_url}" -b main "${llvm_dir}" --depth=1
-          cd "${llvm_dir}"
-          git fetch --depth=1 "${llvm_url}" main
-          git reset --hard FETCH_HEAD
-          cd ..
+          git clone --single-branch "${llvm_url}" -b main src/llvm-project --depth=1
           sed -i 's/set(LLVM_VERSION_SUFFIX.*/set(LLVM_VERSION_SUFFIX "")/' \
-            ${llvm_dir}/cmake/Modules/LLVMVersion.cmake
+            src/llvm-project/cmake/Modules/LLVMVersion.cmake
 
       - name: Cache llvm source
         uses: actions/cache/save@v4
