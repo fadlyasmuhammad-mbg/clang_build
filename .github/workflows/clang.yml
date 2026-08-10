@@ -5,6 +5,9 @@ on:
     branches:
       - main
 
+  schedule:
+    - cron: '0 17 * * 5'
+
 env:
   TZ: Asia/Jakarta
   llvm_url: https://github.com/llvm/llvm-project
