@@ -24,6 +24,14 @@ chmod u+x ~/.git/hooks/commit-msg
 # Export common environment variables
 export PATH="/usr/bin/core_perl:${PATH}"
 export cpu_core="$(nproc --all)"
+
+# ccache configuration
+export CCACHE_DIR="${HOME}/.cache/ccache"
+export CCACHE_MAXSIZE="20G"
+export CCACHE_COMPRESS=1
+export CCACHE_COMPRESSLEVEL=5
+export CCACHE_SLOPPINESS=time_macros
+
 export release_tag="$(date +'%Y%m%d')"     # "{year}{month}{date}" format
 export release_date="$(date +'%-d %B %Y')" # "Day Month Year" format
 export install_path="${DIR}/install"

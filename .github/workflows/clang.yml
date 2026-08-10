@@ -23,6 +23,23 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
+      - name: Setup ccache
+        run: |
+          apt update
+          apt install -y ccache
+          ccache --set-config max_size=20G
+          ccache --set-config compression=true
+          ccache --set-config compression_level=5
+          ccache -z
+
+      - name: Cache ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ccache
+          key: llvm-ccache-${{ runner.os }}-${{ hashFiles('tc_scripts/build.sh') }}
+          restore-keys: |
+            llvm-ccache-${{ runner.os }}-
+
       - name: Clone LLVM source
         run: |
           git clone --single-branch "${llvm_url}" -b main src/llvm-project --depth=1
@@ -33,7 +50,9 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: src/llvm-project
-          key: llvm-src-${{ github.run_id }}
+          key: llvm-src-${{ runner.os }}-${{ hashFiles('tc_scripts/**') }}
+          restore-keys: |
+            llvm-src-${{ runner.os }}-
 
   profile:
     name: Build LLVM (profile)
@@ -46,11 +65,30 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
+      - name: Setup ccache
+        run: |
+          apt update
+          apt install -y ccache
+          ccache --set-config max_size=20G
+          ccache --set-config compression=true
+          ccache --set-config compression_level=5
+          ccache -z
+
+      - name: Cache ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ccache
+          key: llvm-ccache-${{ runner.os }}-${{ hashFiles('tc_scripts/build.sh') }}
+          restore-keys: |
+            llvm-ccache-${{ runner.os }}-
+
       - name: Restore llvm source cache
         uses: actions/cache/restore@v4
         with:
           path: src/llvm-project
-          key: llvm-src-${{ github.run_id }}
+          key: llvm-src-${{ runner.os }}-${{ hashFiles('tc_scripts/**') }}
+          restore-keys: |
+            llvm-src-${{ runner.os }}-
 
       - name: Build profile
         env:
@@ -68,7 +106,9 @@ jobs:
           path: |
             build/llvm/instrumented
             src/llvm-project
-          key: profdata-${{ github.run_id }}
+          key: llvm-profdata-${{ runner.os }}--${{ hashFiles('tc_scripts/build.sh') }}
+          restore-keys: |
+            llvm-profdata-${{ runner.os }}-
 
   final:
     name: Build LLVM (final)
@@ -81,13 +121,32 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
+      - name: Setup ccache
+        run: |
+          apt update
+          apt install -y ccache
+          ccache --set-config max_size=20G
+          ccache --set-config compression=true
+          ccache --set-config compression_level=5
+          ccache -z
+
+      - name: Cache ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ccache
+          key: llvm-ccache-${{ runner.os }}-${{ hashFiles('tc_scripts/build.sh') }}
+          restore-keys: |
+            llvm-ccache-${{ runner.os }}-
+
       - name: Restore profdata + llvm source cache
         uses: actions/cache/restore@v4
         with:
           path: |
             build/llvm/instrumented
             src/llvm-project
-          key: profdata-${{ github.run_id }}
+          key: llvm-profdata-${{ runner.os }}--${{ hashFiles('tc_scripts/build.sh') }}
+          restore-keys: |
+            llvm-profdata-${{ runner.os }}-
 
       - name: Build final
         env:
@@ -95,3 +154,8 @@ jobs:
           ghuser_name: ${{ secrets.GHUSER_NAME }}
           ghuser_email: ${{ secrets.GHUSER_EMAIL }}
         run: ./tc_scripts/init.sh final
+
+      - name: Show ccache stats
+        if: always()
+        run: |
+          ccache -s
