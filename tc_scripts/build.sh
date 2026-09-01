@@ -17,7 +17,7 @@ export llvm_log="${DIR}/build-llvm-${release_tag}.log"
     --multicall \
     --quiet-cmake \
     --lto thin \
-    --targets AArch64 X86 \
+    --targets ARM AArch64 X86 \
     --vendor-string "Cirrus" \
     2>&1 | tee "${llvm_log}"
 
